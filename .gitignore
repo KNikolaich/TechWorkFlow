@@ -14,7 +14,10 @@ node_modules/
 build/
 dist/
 coverage/
+.vs/
 .DS_Store
 *.log
 .env*
 !.env.example
+/.vs
+/.vs

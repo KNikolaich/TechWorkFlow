@@ -20,28 +20,28 @@
             </MudItem>
 
             <MudItem xs="12" md="4">
-                <MudSelect Guid? @bind-Value="_form.EquipmentId" Label="Оборудование" Required="true">
+                <MudSelect T="Guid" @bind-Value="_form.EquipmentId" Label="Оборудование" Required="true">
                     @foreach (var e in _equipment)
                     {
-                        <MudSelectItem Value="@e.Id">@e.Name</MudSelectItem>
+                        <MudSelectItem T="Guid" Value="@e.Id">@e.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
 
             <MudItem xs="12" md="4">
-                <MudSelect Guid? @bind-Value="_form.ClubId" Label="Клуб" Required="true" ValueChanged="@OnClubChanged">
+                <MudSelect T="Guid" @bind-Value="_form.ClubId" Label="Клуб" Required="true">
                     @foreach (var c in _clubs)
                     {
-                        <MudSelectItem Value="@c.Id">@c.Name</MudSelectItem>
+                        <MudSelectItem T="Guid" Value="@c.Id">@c.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
 
             <MudItem xs="12" md="4">
-                <MudSelect Guid? @bind-Value="_form.ZoneId" Label="Зона обслуживания" Required="true">
+                <MudSelect T="Guid" @bind-Value="_form.ZoneId" Label="Зона обслуживания" Required="true">
                     @foreach (var z in _filteredZones)
                     {
-                        <MudSelectItem Value="@z.Id">@z.Name</MudSelectItem>
+                        <MudSelectItem T="Guid" Value="@z.Id">@z.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
@@ -63,7 +63,7 @@
             </MudItem>
 
             <MudItem xs="12" md="4">
-                <MudCheckBox @bind-Checked="_isArchived" Label="В архив" />
+                <MudCheckBox T="bool" @bind-checked="_isArchived" Label="В архив" />
             </MudItem>
         </MudGrid>
 
@@ -71,7 +71,7 @@
             <MudButton Color="Color.Primary" Variant="Variant.Filled" ButtonType="ButtonType.Submit">
                 Сохранить
             </MudButton>
-            <MudButton Color="Color.Default" Variant="Variant.Outlined" OnClick="@GoBack">
+            <MudButton Color="Color.Secondary" Variant="Variant.Outlined" OnClick="@GoBack">
                 Отмена
             </MudButton>
         </MudStack>
@@ -91,7 +91,9 @@
     private List<EquipmentDto> _equipment = new();
     private List<ClubDto> _clubs = new();
     private List<ZoneDto> _zones = new();
-    private IEnumerable<ZoneDto> _filteredZones => _zones.Where(z => _form.ClubId == null || z.ClubId == _form.ClubId);
+    private IEnumerable<ZoneDto> _filteredZones => _form.ClubId == Guid.Empty
+        ? _zones
+        : _zones.Where(z => z.ClubId == _form.ClubId);
 
     protected override async Task OnInitializedAsync()
     {
@@ -125,12 +127,6 @@
                 _createdDisplay = dto.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm");
             }
         }
-    }
-
-    private void OnClubChanged(Guid? clubId)
-    {
-        _form.ClubId = clubId ?? Guid.Empty;
-        _form.ZoneId = Guid.Empty;
     }
 
     private async Task HandleSubmit()

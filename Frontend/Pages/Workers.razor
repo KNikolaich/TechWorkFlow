@@ -21,13 +21,18 @@
                 <MudTd>@context.FullName</MudTd>
                 <MudTd>@context.Role</MudTd>
                 <MudTd>
-                    <MudSelect @bind-Value="context.Status" Label="Статус" Variant="Variant.Filled" Dense="true" ValueChanged="status => OnStatusChangedAsync(context, status)">
-                        <MudSelectItem Value="Working">Работает</MudSelectItem>
-                        <MudSelectItem Value="OnVacation">В отпуске</MudSelectItem>
-                        <MudSelectItem Value="Dismissed">Уволен</MudSelectItem>
+                    <MudSelect T="string" @bind-Value="context.Status" Label="Статус" Variant="Variant.Filled" Dense="true">
+                        <MudSelectItem T="string" Value="@("Working")">Работает</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("OnVacation")">В отпуске</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Dismissed")">Уволен</MudSelectItem>
                     </MudSelect>
                 </MudTd>
-                <MudTd>@(context.IsActive ? "Да" : "Нет")</MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                               OnClick="@(() => OnStatusChangedAsync(context, context.Status))">
+                        Сохранить
+                    </MudButton>
+                </MudTd>
             </RowTemplate>
         </MudTable>
     </MudPaper>

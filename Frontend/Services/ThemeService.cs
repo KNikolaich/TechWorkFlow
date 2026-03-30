@@ -86,13 +86,6 @@ public sealed class ThemeService : IThemeService
             Error = "#ef4444",
             Info = "#38bdf8"
         },
-        Typography = new Typography
-        {
-            Default = new Default
-            {
-                FontFamily = new[] { "system-ui", "Inter", "Segoe UI", "sans-serif" }
-            }
-        },
         LayoutProperties = new LayoutProperties
         {
             DefaultBorderRadius = "0px"

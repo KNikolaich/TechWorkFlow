@@ -22,10 +22,10 @@
                 <MudTextField @bind-Value="_newUser.FullName" Label="ФИО" />
             </MudItem>
             <MudItem xs="12" md="3">
-                <MudSelect @bind-Value="_newUser.Role" Label="Роль">
-                    <MudSelectItem Value="Admin">Admin</MudSelectItem>
-                    <MudSelectItem Value="Supervisor">Supervisor</MudSelectItem>
-                    <MudSelectItem Value="Worker">Worker</MudSelectItem>
+                <MudSelect T="string" @bind-Value="_newUser.Role" Label="Роль">
+                    <MudSelectItem T="string" Value="@("Admin")">Admin</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Supervisor")">Supervisor</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Worker")">Worker</MudSelectItem>
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" md="3">
@@ -59,7 +59,7 @@
                 <MudTd>@context.Role</MudTd>
                 <MudTd>@context.Status</MudTd>
                 <MudTd>
-                    <MudSwitch @bind-Checked="context.IsActive" Color="Color.Primary" />
+                    <MudSwitch T="bool" @bind-checked="context.IsActive" Color="Color.Primary" />
                 </MudTd>
                 <MudTd>
                     <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="@(() => UpdateAsync(context))" />

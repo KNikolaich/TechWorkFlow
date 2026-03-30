@@ -12,10 +12,10 @@
     <MudPaper Elevation="2" Class="pa-3">
         <MudGrid Spacing="2">
             <MudItem xs="12" md="4">
-                <MudSelect Guid? @bind-Value="_newClubId" Label="Клуб" Required="true">
+                <MudSelect T="Guid" @bind-Value="_newClubIdValue" Label="Клуб" Required="true">
                     @foreach (var c in _clubs)
                     {
-                        <MudSelectItem Value="@c.Id">@c.Name</MudSelectItem>
+                        <MudSelectItem T="Guid" Value="@c.Id">@c.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
@@ -64,6 +64,11 @@
     private readonly List<ClubDto> _clubs = new();
 
     private Guid? _newClubId;
+    private Guid _newClubIdValue
+    {
+        get => _newClubId ?? Guid.Empty;
+        set => _newClubId = value == Guid.Empty ? null : value;
+    }
     private string? _newName;
     private string? _newComment;
 
