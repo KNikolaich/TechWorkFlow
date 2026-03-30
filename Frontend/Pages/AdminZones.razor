@@ -1,0 +1,131 @@
+@page "/admin/zones"
+@inject HttpClient Http
+
+<PageTitle>Зоны</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Справочник зон обслуживания</MudText>
+    <MudText Typo="Typo.caption" Color="Color.Secondary">
+        Зоны привязаны к клубам. Уволенные клубы не отображаются.
+    </MudText>
+
+    <MudPaper Elevation="2" Class="pa-3">
+        <MudGrid Spacing="2">
+            <MudItem xs="12" md="4">
+                <MudSelect Guid? @bind-Value="_newClubId" Label="Клуб" Required="true">
+                    @foreach (var c in _clubs)
+                    {
+                        <MudSelectItem Value="@c.Id">@c.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="_newName" Label="Название зоны" Variant="Variant.Filled" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="_newComment" Label="Комментарий" Variant="Variant.Filled" />
+            </MudItem>
+        </MudGrid>
+
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Class="mt-3" OnClick="@CreateAsync">
+            Добавить зону
+        </MudButton>
+    </MudPaper>
+
+    <MudPaper Elevation="2">
+        <MudTable Items="_items" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>Клуб</MudTh>
+                <MudTh>Название</MudTh>
+                <MudTh>Комментарий</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Клуб">
+                    @_clubs.FirstOrDefault(c => c.Id == context.ClubId)?.Name
+                </MudTd>
+                <MudTd DataLabel="Название">
+                    <MudTextField @bind-Value="context.Name" Immediate="true" />
+                </MudTd>
+                <MudTd DataLabel="Комментарий">
+                    <MudTextField @bind-Value="context.Comment" Immediate="true" />
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="@(() => UpdateAsync(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeleteAsync(context))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private readonly List<ZoneDto> _items = new();
+    private readonly List<ClubDto> _clubs = new();
+
+    private Guid? _newClubId;
+    private string? _newName;
+    private string? _newComment;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var clubs = await Http.GetFromJsonAsync<List<ClubDto>>("api/clubs");
+        if (clubs is not null)
+        {
+            _clubs.AddRange(clubs);
+        }
+
+        var zones = await Http.GetFromJsonAsync<List<ZoneDto>>("api/admin/zones");
+        if (zones is not null)
+        {
+            _items.AddRange(zones);
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        if (_newClubId is null || string.IsNullOrWhiteSpace(_newName))
+            return;
+
+        var request = new UpsertZoneRequest
+        {
+            ClubId = _newClubId.Value,
+            Name = _newName,
+            Comment = _newComment
+        };
+
+        var response = await Http.PostAsJsonAsync("api/admin/zones", request);
+        response.EnsureSuccessStatusCode();
+
+        var created = await response.Content.ReadFromJsonAsync<ZoneDto>();
+        if (created is not null)
+        {
+            _items.Add(created);
+            _newName = string.Empty;
+            _newComment = string.Empty;
+        }
+    }
+
+    private async Task UpdateAsync(ZoneDto dto)
+    {
+        var request = new UpsertZoneRequest
+        {
+            ClubId = dto.ClubId,
+            Name = dto.Name,
+            Comment = dto.Comment
+        };
+
+        var response = await Http.PutAsJsonAsync($"api/admin/zones/{dto.Id}", request);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private async Task DeleteAsync(ZoneDto dto)
+    {
+        var response = await Http.DeleteAsync($"api/admin/zones/{dto.Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            _items.Remove(dto);
+        }
+    }
+}
+

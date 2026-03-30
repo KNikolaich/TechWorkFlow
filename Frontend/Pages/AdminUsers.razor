@@ -1,0 +1,125 @@
+@page "/admin/users"
+@inject HttpClient Http
+
+<PageTitle>Пользователи</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Администрирование пользователей</MudText>
+    <MudText Typo="Typo.caption" Color="Color.Secondary">
+        Создание и управление учётными записями (Admin / Supervisor / Worker).
+    </MudText>
+
+    <MudPaper Elevation="2" Class="pa-3">
+        <MudText Typo="Typo.subtitle2" Class="mb-2">Новый пользователь</MudText>
+        <MudGrid Spacing="2">
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_newUser.UserName" Label="Логин" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_newUser.Email" Label="Email" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_newUser.FullName" Label="ФИО" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudSelect @bind-Value="_newUser.Role" Label="Роль">
+                    <MudSelectItem Value="Admin">Admin</MudSelectItem>
+                    <MudSelectItem Value="Supervisor">Supervisor</MudSelectItem>
+                    <MudSelectItem Value="Worker">Worker</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_newUser.Password" Label="Пароль" InputType="InputType.Password" />
+            </MudItem>
+        </MudGrid>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Class="mt-3" OnClick="@CreateAsync">
+            Создать
+        </MudButton>
+    </MudPaper>
+
+    <MudPaper Elevation="2">
+        <MudTable Items="_users" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>Логин</MudTh>
+                <MudTh>ФИО</MudTh>
+                <MudTh>Email</MudTh>
+                <MudTh>Роль</MudTh>
+                <MudTh>Статус</MudTh>
+                <MudTh>Активен</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.UserName</MudTd>
+                <MudTd>
+                    <MudTextField @bind-Value="context.FullName" Immediate="true" />
+                </MudTd>
+                <MudTd>
+                    <MudTextField @bind-Value="context.Email" Immediate="true" />
+                </MudTd>
+                <MudTd>@context.Role</MudTd>
+                <MudTd>@context.Status</MudTd>
+                <MudTd>
+                    <MudSwitch @bind-Checked="context.IsActive" Color="Color.Primary" />
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="@(() => UpdateAsync(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeleteAsync(context))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private readonly List<UserDto> _users = new();
+    private readonly CreateUserRequest _newUser = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var users = await Http.GetFromJsonAsync<List<UserDto>>("api/admin/users");
+        if (users is not null)
+        {
+            _users.AddRange(users);
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        var response = await Http.PostAsJsonAsync("api/admin/users", _newUser);
+        if (!response.IsSuccessStatusCode)
+            return;
+
+        var created = await response.Content.ReadFromJsonAsync<UserDto>();
+        if (created is not null)
+        {
+            _users.Add(created);
+            _newUser.UserName = string.Empty;
+            _newUser.Email = string.Empty;
+            _newUser.FullName = string.Empty;
+            _newUser.Password = string.Empty;
+        }
+    }
+
+    private async Task UpdateAsync(UserDto user)
+    {
+        var request = new UpdateUserRequest
+        {
+            Email = user.Email,
+            FullName = user.FullName,
+            IsActive = user.IsActive
+        };
+
+        var response = await Http.PutAsJsonAsync($"api/admin/users/{user.Id}", request);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private async Task DeleteAsync(UserDto user)
+    {
+        var response = await Http.DeleteAsync($"api/admin/users/{user.Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            _users.Remove(user);
+        }
+    }
+}
+

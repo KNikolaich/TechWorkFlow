@@ -1,0 +1,94 @@
+@page "/admin/clubs"
+@inject HttpClient Http
+
+<PageTitle>Клубы</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Справочник клубов</MudText>
+    <MudText Typo="Typo.caption" Color="Color.Secondary">
+        CRUD по клубам. Зоны управляются отдельно.
+    </MudText>
+
+    <MudPaper Elevation="2" Class="pa-3">
+        <MudStack Row="true" Spacing="2">
+            <MudTextField @bind-Value="_newName" Label="Название" Variant="Variant.Filled" />
+            <MudTextField @bind-Value="_newComment" Label="Комментарий" Variant="Variant.Filled" />
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@CreateAsync">
+                Добавить
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+
+    <MudPaper Elevation="2">
+        <MudTable Items="_items" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>Название</MudTh>
+                <MudTh>Комментарий</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <MudTextField @bind-Value="context.Name" Immediate="true" />
+                </MudTd>
+                <MudTd>
+                    <MudTextField @bind-Value="context.Comment" Immediate="true" />
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="@(() => UpdateAsync(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeleteAsync(context))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private readonly List<ClubDto> _items = new();
+    private string? _newName;
+    private string? _newComment;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var items = await Http.GetFromJsonAsync<List<ClubDto>>("api/clubs");
+        if (items is not null)
+        {
+            _items.Clear();
+            _items.AddRange(items);
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newName))
+            return;
+
+        var request = new UpsertClubRequest { Name = _newName, Comment = _newComment };
+        var response = await Http.PostAsJsonAsync("api/clubs", request);
+        response.EnsureSuccessStatusCode();
+
+        var created = await response.Content.ReadFromJsonAsync<ClubDto>();
+        if (created is not null)
+        {
+            _items.Add(created);
+            _newName = string.Empty;
+            _newComment = string.Empty;
+        }
+    }
+
+    private async Task UpdateAsync(ClubDto dto)
+    {
+        var request = new UpsertClubRequest { Name = dto.Name, Comment = dto.Comment };
+        var response = await Http.PutAsJsonAsync($"api/clubs/{dto.Id}", request);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private async Task DeleteAsync(ClubDto dto)
+    {
+        var response = await Http.DeleteAsync($"api/clubs/{dto.Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            _items.Remove(dto);
+        }
+    }
+}
+

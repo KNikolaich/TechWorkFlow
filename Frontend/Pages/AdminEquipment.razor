@@ -1,0 +1,94 @@
+@page "/admin/equipment"
+@inject HttpClient Http
+
+<PageTitle>Оборудование</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Справочник оборудования</MudText>
+    <MudText Typo="Typo.caption" Color="Color.Secondary">
+        CRUD-интерфейс для сущности Equipment.
+    </MudText>
+
+    <MudPaper Elevation="2" Class="pa-3">
+        <MudStack Row="true" Spacing="2">
+            <MudTextField @bind-Value="_newName" Label="Название" Variant="Variant.Filled" />
+            <MudTextField @bind-Value="_newComment" Label="Комментарий" Variant="Variant.Filled" />
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@CreateAsync">
+                Добавить
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+
+    <MudPaper Elevation="2">
+        <MudTable Items="_items" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>Название</MudTh>
+                <MudTh>Комментарий</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Название">
+                    <MudTextField @bind-Value="context.Name" Immediate="true" />
+                </MudTd>
+                <MudTd DataLabel="Комментарий">
+                    <MudTextField @bind-Value="context.Comment" Immediate="true" />
+                </MudTd>
+                <MudTd DataLabel="">
+                    <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="@(() => UpdateAsync(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeleteAsync(context))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private readonly List<EquipmentDto> _items = new();
+    private string? _newName;
+    private string? _newComment;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var items = await Http.GetFromJsonAsync<List<EquipmentDto>>("api/admin/equipments");
+        if (items is not null)
+        {
+            _items.Clear();
+            _items.AddRange(items);
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newName))
+            return;
+
+        var request = new UpsertEquipmentRequest { Name = _newName, Comment = _newComment };
+        var response = await Http.PostAsJsonAsync("api/admin/equipments", request);
+        response.EnsureSuccessStatusCode();
+
+        var created = await response.Content.ReadFromJsonAsync<EquipmentDto>();
+        if (created is not null)
+        {
+            _items.Add(created);
+            _newName = string.Empty;
+            _newComment = string.Empty;
+        }
+    }
+
+    private async Task UpdateAsync(EquipmentDto dto)
+    {
+        var request = new UpsertEquipmentRequest { Name = dto.Name, Comment = dto.Comment };
+        var response = await Http.PutAsJsonAsync($"api/admin/equipments/{dto.Id}", request);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private async Task DeleteAsync(EquipmentDto dto)
+    {
+        var response = await Http.DeleteAsync($"api/admin/equipments/{dto.Id}");
+        if (response.IsSuccessStatusCode)
+        {
+            _items.Remove(dto);
+        }
+    }
+}
+

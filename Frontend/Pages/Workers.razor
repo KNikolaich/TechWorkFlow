@@ -1,0 +1,65 @@
+@page "/workers"
+@inject HttpClient Http
+
+<PageTitle>Работники</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Управление статусом работников</MudText>
+    <MudText Typo="Typo.caption" Color="Color.Secondary">
+        Доступно для Supervisor: смена статуса (Работает / В отпуске / Уволен). Уволенные автоматически становятся неактивными.
+    </MudText>
+
+    <MudPaper Elevation="2">
+        <MudTable Items="_workers" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>ФИО</MudTh>
+                <MudTh>Роль</MudTh>
+                <MudTh>Статус</MudTh>
+                <MudTh>Активен</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.FullName</MudTd>
+                <MudTd>@context.Role</MudTd>
+                <MudTd>
+                    <MudSelect @bind-Value="context.Status" Label="Статус" Variant="Variant.Filled" Dense="true" ValueChanged="status => OnStatusChangedAsync(context, status)">
+                        <MudSelectItem Value="Working">Работает</MudSelectItem>
+                        <MudSelectItem Value="OnVacation">В отпуске</MudSelectItem>
+                        <MudSelectItem Value="Dismissed">Уволен</MudSelectItem>
+                    </MudSelect>
+                </MudTd>
+                <MudTd>@(context.IsActive ? "Да" : "Нет")</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private readonly List<UserDto> _workers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var workers = await Http.GetFromJsonAsync<List<UserDto>>("api/workers");
+        if (workers is not null)
+        {
+            _workers.AddRange(workers);
+        }
+    }
+
+    private async Task OnStatusChangedAsync(UserDto worker, string newStatus)
+    {
+        var request = new UpdateWorkerStatusRequest { Status = newStatus };
+        var response = await Http.PatchAsJsonAsync($"api/workers/{worker.Id}/status", request);
+        response.EnsureSuccessStatusCode();
+
+        var updated = await response.Content.ReadFromJsonAsync<UserDto>();
+        if (updated is not null)
+        {
+            var index = _workers.FindIndex(x => x.Id == worker.Id);
+            if (index >= 0)
+            {
+                _workers[index] = updated;
+            }
+        }
+    }
+}
+
