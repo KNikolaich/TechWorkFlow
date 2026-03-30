@@ -1,7 +1,35 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>TechWorkFlow</PageTitle>
 
-<h1>Hello, world!</h1>
+<MudGrid Spacing="3">
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h5" Class="mb-2">Текущие заявки</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-4">
+                Быстрый обзор состояния системы. Подробные списки доступны в разделе «Заявки».
+            </MudText>
 
-Welcome to your new app.
+            <MudSkeleton Height="24px" Class="mb-2" />
+            <MudSkeleton Height="24px" Class="mb-2" />
+            <MudSkeleton Height="24px" Class="mb-2" />
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h5" Class="mb-2">Быстрые действия</MudText>
+            <MudStack Spacing="1.5">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="tasks/new">
+                    Создать заявку
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="tasks">
+                    Открыть список заявок
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="my-tasks">
+                    Мои заявки
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+</MudGrid>

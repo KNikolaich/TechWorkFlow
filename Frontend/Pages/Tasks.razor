@@ -1,0 +1,63 @@
+@page "/tasks"
+@inject HttpClient Http
+
+<PageTitle>Заявки</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Все заявки</MudText>
+    <MudText Typo="Typo.caption" Color="Color.Secondary">
+        Список всех задач с базовыми фильтрами. Для Supervisor/Admin.
+    </MudText>
+
+    <MudPaper Elevation="2" Class="pa-3">
+        <MudGrid Spacing="2">
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_search" Label="Поиск по описанию" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudPaper Elevation="2">
+        <MudTable Items="_tasks" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>#</MudTh>
+                <MudTh>Оборудование</MudTh>
+                <MudTh>Клуб</MudTh>
+                <MudTh>Зона</MudTh>
+                <MudTh>Описание</MudTh>
+                <MudTh>Исполнитель</MudTh>
+                <MudTh>Статус</MudTh>
+                <MudTh>Дедлайн</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="#">@context.TaskNumber</MudTd>
+                <MudTd DataLabel="Оборудование">@context.EquipmentId</MudTd>
+                <MudTd DataLabel="Клуб">@context.ClubId</MudTd>
+                <MudTd DataLabel="Зона">@context.ZoneId</MudTd>
+                <MudTd DataLabel="Описание">@context.Description</MudTd>
+                <MudTd DataLabel="Исполнитель">@context.ExecutorId</MudTd>
+                <MudTd DataLabel="Статус">@context.StatusText</MudTd>
+                <MudTd DataLabel="Дедлайн">@context.Deadline.ToString("dd.MM.yyyy")</MudTd>
+                <MudTd>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Href="@($"tasks/{context.Id}")">
+                        Открыть
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private IReadOnlyList<TaskDto> _tasks = Array.Empty<TaskDto>();
+    private string? _search;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // TODO: заменить на реальный endpoint с фильтрами
+        var result = await Http.GetFromJsonAsync<IReadOnlyList<TaskDto>>("api/tasks");
+        _tasks = result ?? Array.Empty<TaskDto>();
+    }
+}
+

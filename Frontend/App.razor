@@ -1,12 +1,36 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
-        </LayoutView>
-    </NotFound>
-</Router>
+@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+@inject Frontend.Services.IThemeService ThemeService
+
+CascadingAuthenticationState
+{
+    <MudThemeProvider Theme="@_theme" IsDarkMode="@_isDarkMode">
+        <MudDialogProvider />
+        <MudSnackbarProvider MaxDisplayedSnackbars="3" PreventDuplicates="true">
+            <Router AppAssembly="@typeof(App).Assembly">
+                <Found Context="routeData">
+                    <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+                    <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+                </Found>
+                <NotFound>
+                    <PageTitle>Not found</PageTitle>
+                    <LayoutView Layout="@typeof(MainLayout)">
+                        <p role="alert">Sorry, there's nothing at this address.</p>
+                    </LayoutView>
+                </NotFound>
+            </Router>
+        </MudSnackbarProvider>
+    </MudThemeProvider>
+}
+
+@code {
+    private MudTheme _theme = new();
+    private bool _isDarkMode = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _theme = await ThemeService.GetCurrentThemeAsync();
+        var key = await ThemeService.GetCurrentThemeKeyAsync();
+        _isDarkMode = key is "dark" or "warm" or "cold" or "neon";
+    }
+}

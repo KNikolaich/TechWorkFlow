@@ -1,0 +1,51 @@
+@page "/my-tasks"
+@inject HttpClient Http
+
+<PageTitle>Мои заявки</PageTitle>
+
+<MudStack Spacing="2">
+    <MudText Typo="Typo.h5">Мои заявки</MudText>
+    <MudText Typo="Typo.caption" Color="Color.Secondary">
+        Работник может менять только статус своей заявки.
+    </MudText>
+
+    <MudPaper Elevation="2">
+        <MudTable Items="_tasks" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>#</MudTh>
+                <MudTh>Описание</MudTh>
+                <MudTh>Статус</MudTh>
+                <MudTh>Дедлайн</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="#">@context.TaskNumber</MudTd>
+                <MudTd DataLabel="Описание">@context.Description</MudTd>
+                <MudTd DataLabel="Статус">
+                    <MudTextField @bind-Value="context.StatusText" Immediate="true" OnBlur="() => SaveStatusAsync(context)" />
+                </MudTd>
+                <MudTd DataLabel="Дедлайн">@context.Deadline.ToString("dd.MM.yyyy")</MudTd>
+                <MudTd></MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private List<TaskDto> _tasks = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Предполагается endpoint, возвращающий задачи по текущему Worker
+        var result = await Http.GetFromJsonAsync<List<TaskDto>>("api/tasks/my");
+        _tasks = result ?? new List<TaskDto>();
+    }
+
+    private async Task SaveStatusAsync(TaskDto task)
+    {
+        var request = new UpdateTaskStatusRequest { StatusText = task.StatusText };
+        var response = await Http.PatchAsJsonAsync($"api/tasks/{task.Id}/status", request);
+        response.EnsureSuccessStatusCode();
+    }
+}
+

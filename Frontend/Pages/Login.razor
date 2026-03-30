@@ -1,0 +1,68 @@
+@page "/login"
+@inject Frontend.Services.IAuthServiceClient AuthClient
+@inject Frontend.Services.JwtAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavManager
+
+<PageTitle>Вход</PageTitle>
+
+<MudPaper Elevation="3" Class="pa-4 mx-auto" Style="max-width:400px;margin-top:10vh;">
+    <MudText Typo="Typo.h5" Class="mb-2">Вход в систему</MudText>
+    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-4">
+        Введите логин и пароль администратора, руководителя или работника.
+    </MudText>
+
+    <EditForm Model="@_model" OnValidSubmit="@HandleSubmit">
+        <DataAnnotationsValidator />
+
+        <MudTextField @bind-Value="_model.Login" Label="Логин" Variant="Variant.Filled" Required="true" />
+        <MudTextField @bind-Value="_model.Password" Label="Пароль" Variant="Variant.Filled" InputType="InputType.Password" Required="true" Class="mt-3" />
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-3">@_error</MudAlert>
+        }
+
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Class="mt-4"
+                   Disabled="@_busy"
+                   FullWidth="true"
+                   ButtonType="ButtonType.Submit">
+            @(_busy ? "Вход..." : "Войти")
+        </MudButton>
+    </EditForm>
+</MudPaper>
+
+@code {
+    private readonly LoginRequest _model = new();
+    private bool _busy;
+    private string? _error;
+
+    private async Task HandleSubmit()
+    {
+        _busy = true;
+        _error = null;
+
+        try
+        {
+            var auth = await AuthClient.LoginAsync(_model);
+            if (auth is null)
+            {
+                _error = "Неверный логин или пароль.";
+                return;
+            }
+
+            await AuthStateProvider.SetAccessTokenAsync(auth.AccessToken);
+            NavManager.NavigateTo("/", true);
+        }
+        catch
+        {
+            _error = "Ошибка входа. Попробуйте ещё раз.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}
+

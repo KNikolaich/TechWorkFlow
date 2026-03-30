@@ -1,0 +1,169 @@
+@page "/tasks/new"
+@page "/tasks/{Id:guid}"
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<PageTitle>Заявка</PageTitle>
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudText Typo="Typo.h5" Class="mb-2">@(_isNew ? "Новая заявка" : $"Заявка #{_model.TaskNumber}")</MudText>
+    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-4">
+        Форма соответствует требованиям постановки: оборудование, клуб, зона, исполнитель, сроки и статус.
+    </MudText>
+
+    <EditForm Model="@_form" OnValidSubmit="@HandleSubmit">
+        <DataAnnotationsValidator />
+
+        <MudGrid Spacing="2">
+            <MudItem xs="12" md="4">
+                <MudTextField Label="Дата создания" Value="@_createdDisplay" Disabled="true" />
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudSelect Guid? @bind-Value="_form.EquipmentId" Label="Оборудование" Required="true">
+                    @foreach (var e in _equipment)
+                    {
+                        <MudSelectItem Value="@e.Id">@e.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudSelect Guid? @bind-Value="_form.ClubId" Label="Клуб" Required="true" ValueChanged="@OnClubChanged">
+                    @foreach (var c in _clubs)
+                    {
+                        <MudSelectItem Value="@c.Id">@c.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudSelect Guid? @bind-Value="_form.ZoneId" Label="Зона обслуживания" Required="true">
+                    @foreach (var z in _filteredZones)
+                    {
+                        <MudSelectItem Value="@z.Id">@z.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_form.Description" Lines="5" Label="Описание проблемы" Required="true" />
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudNumericField @bind-Value="_form.EstimatedTime" Label="Предполагаемое время (мин)" />
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudDatePicker @bind-Date="_deadline" Label="Дедлайн" />
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="_form.StatusText" Label="Статус" />
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudCheckBox @bind-Checked="_isArchived" Label="В архив" />
+            </MudItem>
+        </MudGrid>
+
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" ButtonType="ButtonType.Submit">
+                Сохранить
+            </MudButton>
+            <MudButton Color="Color.Default" Variant="Variant.Outlined" OnClick="@GoBack">
+                Отмена
+            </MudButton>
+        </MudStack>
+    </EditForm>
+</MudPaper>
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool _isNew => Id is null;
+    private TaskDto _model = new();
+    private readonly CreateTaskRequest _form = new();
+    private DateTime? _deadline;
+    private bool _isArchived;
+    private string _createdDisplay = string.Empty;
+
+    private List<EquipmentDto> _equipment = new();
+    private List<ClubDto> _clubs = new();
+    private List<ZoneDto> _zones = new();
+    private IEnumerable<ZoneDto> _filteredZones => _zones.Where(z => _form.ClubId == null || z.ClubId == _form.ClubId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Справочники
+        _equipment = (await Http.GetFromJsonAsync<List<EquipmentDto>>("api/admin/equipment")) ?? new();
+        _clubs = (await Http.GetFromJsonAsync<List<ClubDto>>("api/admin/clubs")) ?? new();
+        _zones = (await Http.GetFromJsonAsync<List<ZoneDto>>("api/admin/zones")) ?? new();
+
+        if (_isNew)
+        {
+            var now = DateTime.UtcNow;
+            _deadline = now.AddDays(3);
+            _createdDisplay = now.ToLocalTime().ToString("dd.MM.yyyy HH:mm");
+        }
+        else
+        {
+            var dto = await Http.GetFromJsonAsync<TaskDto>($"api/tasks/{Id}");
+            if (dto is not null)
+            {
+                _model = dto;
+                _form.EquipmentId = dto.EquipmentId;
+                _form.ClubId = dto.ClubId;
+                _form.ZoneId = dto.ZoneId;
+                _form.Description = dto.Description;
+                _form.ExecutorId = dto.ExecutorId;
+                _form.EstimatedTime = dto.EstimatedTime;
+                _form.Deadline = dto.Deadline;
+                _form.StatusText = dto.StatusText;
+                _deadline = dto.Deadline;
+                _isArchived = dto.IsArchived;
+                _createdDisplay = dto.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm");
+            }
+        }
+    }
+
+    private void OnClubChanged(Guid? clubId)
+    {
+        _form.ClubId = clubId ?? Guid.Empty;
+        _form.ZoneId = Guid.Empty;
+    }
+
+    private async Task HandleSubmit()
+    {
+        _form.Deadline ??= _deadline ?? DateTime.UtcNow.AddDays(3);
+
+        if (_isNew)
+        {
+            var response = await Http.PostAsJsonAsync("api/tasks", _form);
+            response.EnsureSuccessStatusCode();
+        }
+        else
+        {
+            var update = new UpdateTaskRequest
+            {
+                EquipmentId = _form.EquipmentId,
+                ClubId = _form.ClubId,
+                ZoneId = _form.ZoneId,
+                Description = _form.Description,
+                ExecutorId = _form.ExecutorId,
+                EstimatedTime = _form.EstimatedTime,
+                Deadline = _deadline ?? _form.Deadline ?? DateTime.UtcNow.AddDays(3),
+                StatusText = _form.StatusText,
+                IsArchived = _isArchived
+            };
+
+            var response = await Http.PutAsJsonAsync($"api/tasks/{Id}", update);
+            response.EnsureSuccessStatusCode();
+        }
+
+        NavManager.NavigateTo("/tasks");
+    }
+
+    private void GoBack() => NavManager.NavigateTo("/tasks");
+}
+

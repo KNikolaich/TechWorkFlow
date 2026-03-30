@@ -1,39 +1,62 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Frontend</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
+@using Frontend.Services
+@inject ICurrentUserService CurrentUserService
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+<MudNavMenu Class="tw-navmenu">
+    <MudText Typo="Typo.overline" Class="tw-nav-section">Общее</MudText>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
+        Дэшборд
+    </MudNavLink>
+
+    @if (_currentUser?.IsAuthenticated == true)
+    {
+        if (_currentUser.Role is AuthRoles.Admin or AuthRoles.Supervisor)
+        {
+            <MudText Typo="Typo.overline" Class="tw-nav-section">Заявки</MudText>
+            <MudNavLink Href="tasks" Icon="@Icons.Material.Filled.ListAlt">
+                Все заявки
+            </MudNavLink>
+            <MudNavLink Href="tasks/new" Icon="@Icons.Material.Filled.AddCircleOutline">
+                Новая заявка
+            </MudNavLink>
+        }
+
+        if (_currentUser.Role is AuthRoles.Worker)
+        {
+            <MudText Typo="Typo.overline" Class="tw-nav-section">Моя работа</MudText>
+            <MudNavLink Href="my-tasks" Icon="@Icons.Material.Filled.AssignmentInd">
+                Мои заявки
+            </MudNavLink>
+        }
+
+        if (_currentUser.Role is AuthRoles.Admin)
+        {
+            <MudText Typo="Typo.overline" Class="tw-nav-section">Администрирование</MudText>
+            <MudNavLink Href="admin/equipment" Icon="@Icons.Material.Filled.Build">
+                Оборудование
+            </MudNavLink>
+            <MudNavLink Href="admin/clubs" Icon="@Icons.Material.Filled.LocationCity">
+                Клубы
+            </MudNavLink>
+            <MudNavLink Href="admin/zones" Icon="@Icons.Material.Filled.GridView">
+                Зоны
+            </MudNavLink>
+            <MudNavLink Href="admin/users" Icon="@Icons.Material.Filled.People">
+                Работники
+            </MudNavLink>
+        }
+    }
+
+    <MudText Typo="Typo.overline" Class="tw-nav-section">Аккаунт</MudText>
+    <MudNavLink Href="account" Icon="@Icons.Material.Filled.Settings">
+        Личный кабинет
+    </MudNavLink>
+</MudNavMenu>
 
 @code {
-    private bool collapseNavMenu = true;
+    private CurrentUser? _currentUser;
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+    protected override async Task OnInitializedAsync()
     {
-        collapseNavMenu = !collapseNavMenu;
+        _currentUser = await CurrentUserService.GetCurrentUserAsync();
     }
 }

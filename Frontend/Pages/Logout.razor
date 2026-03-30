@@ -1,0 +1,32 @@
+@page "/logout"
+@inject Frontend.Services.JwtAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavManager
+
+<PageTitle>Выход</PageTitle>
+
+<MudPaper Elevation="1" Class="pa-4 mx-auto" Style="max-width:420px;margin-top:10vh;">
+    <MudText Typo="Typo.h6" Class="mb-2">Выход из системы</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">
+        Текущая сессия будет завершена на этом устройстве.
+    </MudText>
+
+    <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="@HandleLogout" FullWidth="true">
+        Выйти
+    </MudButton>
+</MudPaper>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Мягкий авто-выход при переходе на страницу
+        await AuthStateProvider.SetAccessTokenAsync(null);
+        NavManager.NavigateTo("/login", true);
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthStateProvider.SetAccessTokenAsync(null);
+        NavManager.NavigateTo("/login", true);
+    }
+}
+

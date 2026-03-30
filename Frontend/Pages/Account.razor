@@ -1,0 +1,63 @@
+@page "/account"
+@using Frontend.Services
+@inject IThemeService ThemeService
+@inject ICurrentUserService CurrentUserService
+
+<PageTitle>Личный кабинет</PageTitle>
+
+<MudGrid Justify="Justify.FlexStart" Spacing="3">
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-2">Профиль</MudText>
+            <MudText Typo="Typo.caption" Class="mb-4" Color="Color.Secondary">
+                Информация о текущем пользователе.
+            </MudText>
+
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.body2"><b>Имя:</b> @_user.FullName</MudText>
+                <MudText Typo="Typo.body2"><b>Логин:</b> @_user.UserName</MudText>
+                <MudText Typo="Typo.body2"><b>Роль:</b> @_user.Role</MudText>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-2">Тема интерфейса</MudText>
+            <MudText Typo="Typo.caption" Class="mb-4" Color="Color.Secondary">
+                Выберите одну из преднастроенных тем. Настройка сохраняется в браузере.
+            </MudText>
+
+            <MudSelect @bind-Value="_themeKey" Label="Тема" Variant="Variant.Filled">
+                @foreach (var kv in _themes)
+                {
+                    <MudSelectItem Value="@kv.Key">@kv.Value</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" Class="mt-4" OnClick="@ApplyTheme">
+                Применить
+            </MudButton>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private CurrentUser _user = new();
+    private string _themeKey = "dark";
+    private IReadOnlyDictionary<string, string> _themes = new Dictionary<string, string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = await CurrentUserService.GetCurrentUserAsync();
+        _themes = ThemeService.GetAvailableThemes();
+        _themeKey = await ThemeService.GetCurrentThemeKeyAsync();
+    }
+
+    private async Task ApplyTheme()
+    {
+        await ThemeService.SetThemeAsync(_themeKey);
+        // Фактическое обновление темы произойдёт при следующем запуске; можно добавить перезагрузку страницы.
+    }
+}
+
