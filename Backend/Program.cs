@@ -20,10 +20,11 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services
     .AddIdentityCore<Shared.Domain.ApplicationUser>(options =>
     {
-        options.Password.RequireDigit = true;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequiredLength = 8;
+        //options.Password.RequireDigit = true;
+        //options.Password.RequireUppercase = true;
+        //options.Password.RequireLowercase = true;
+        options.Password.RequiredLength = 6;
+        options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
     })
     .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<AppDbContext>()

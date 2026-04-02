@@ -10,7 +10,7 @@ namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/admin/users")]
-[Authorize(Policy = "AdminOnly")]
+[Authorize]
 public sealed class AdminUsersController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -21,6 +21,7 @@ public sealed class AdminUsersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<IReadOnlyList<UserDto>>> GetAll(CancellationToken cancellationToken)
     {
         var users = await _userManager.Users.OrderBy(x => x.UserName).ToListAsync(cancellationToken);
