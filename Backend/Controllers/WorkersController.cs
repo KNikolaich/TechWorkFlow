@@ -24,7 +24,7 @@ public sealed class WorkersController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<UserDto>>> GetAssignable(CancellationToken cancellationToken)
     {
         var users = await _userManager.Users
-            .Where(x => x.IsActive && x.Status != UserEmploymentStatus.Dismissed)
+            // .Where(x => x.IsActive && x.Status != UserEmploymentStatus.Dismissed) // TODO пока что всех отображаем
             .OrderBy(x => x.FullName)
             .ToListAsync(cancellationToken);
 
