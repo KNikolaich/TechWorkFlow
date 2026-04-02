@@ -10,7 +10,7 @@ namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/workers")]
-[Authorize(Policy = "SupervisorOnly")]
+[Authorize]
 public sealed class WorkersController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -52,6 +52,7 @@ public sealed class WorkersController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/status")]
+    [Authorize(Policy = "SupervisorOnly")]
     public async Task<ActionResult<UserDto>> UpdateStatus(Guid id, [FromBody] UpdateWorkerStatusRequest request)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
