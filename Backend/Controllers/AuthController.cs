@@ -1,7 +1,10 @@
 using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Contracts.Admin;
 using Shared.Contracts.Auth;
+using Shared.Domain;
 
 namespace Backend.Controllers;
 
@@ -11,10 +14,12 @@ public sealed class AuthController : ControllerBase
 {
     private const string RefreshCookieName = "twf.refresh";
     private readonly IAuthService _authService;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, UserManager<ApplicationUser> userManager)
     {
         _authService = authService;
+        _userManager = userManager;
     }
 
     [HttpPost("register")]
@@ -87,6 +92,37 @@ public sealed class AuthController : ControllerBase
             Secure = true,
             SameSite = SameSiteMode.Strict,
             Expires = expiresAt
+        });
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<ActionResult<UserDto>> Me()
+    {
+        var rawId = User.FindFirst("sub")?.Value ?? User.FindFirst("nameidentifier")?.Value ?? User.Identities.FirstOrDefault()?.Claims.FirstOrDefault()?.Value;
+        if (!Guid.TryParse(rawId, out var userId) || userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault() ?? user.Role;
+
+        return Ok(new UserDto
+        {
+            Id = user.Id,
+            UserName = user.UserName ?? string.Empty,
+            Email = user.Email ?? string.Empty,
+            FullName = user.FullName,
+            Role = role,
+            Status = user.Status.ToString(),
+            IsActive = user.IsActive
         });
     }
 }
