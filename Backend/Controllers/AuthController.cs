@@ -17,6 +17,20 @@ public sealed class AuthController : ControllerBase
         _authService = authService;
     }
 
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _authService.RegisterAsync(request, cancellationToken);
+        if (result is null)
+        {
+            return BadRequest("Unable to register user. Username or email may already be in use or password does not meet requirements.");
+        }
+
+        WriteRefreshCookie(result.RefreshToken, result.RefreshTokenExpiresAt);
+        return Ok(result);
+    }
+
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)

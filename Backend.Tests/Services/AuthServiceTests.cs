@@ -135,4 +135,61 @@ public sealed class AuthServiceTests
 
         return new AppDbContext(options);
     }
+
+    [Fact]
+    public async Task RegisterAsync_Should_Create_User_And_Return_Tokens_When_Data_Valid()
+    {
+        await using var db = CreateDbContext();
+
+        var userManager = CreateUserManagerMock();
+        userManager.Setup(x => x.FindByNameAsync(It.IsAny<string>())).ReturnsAsync((ApplicationUser?)null);
+        userManager.Setup(x => x.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync((ApplicationUser?)null);
+        userManager.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
+        userManager.Setup(x => x.AddToRoleAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
+        userManager.Setup(x => x.GetRolesAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(new List<string> { AuthConstants.WorkerRole });
+
+        var service = CreateAuthService(userManager.Object, db);
+
+        var request = new RegisterRequest
+        {
+            UserName = "new.user",
+            Email = "new.user@test.local",
+            Password = "P@ssw0rd!",
+            FullName = "New User"
+        };
+
+        var result = await service.RegisterAsync(request);
+
+        result.Should().NotBeNull();
+        result!.AccessToken.Should().NotBeNullOrWhiteSpace();
+        result.RefreshToken.Should().NotBeNullOrWhiteSpace();
+        (await db.RefreshTokens.CountAsync()).Should().Be(1);
+
+        userManager.Verify(x => x.CreateAsync(It.Is<ApplicationUser>(u => u.UserName == "new.user"), "P@ssw0rd!"), Times.Once);
+        userManager.Verify(x => x.AddToRoleAsync(It.IsAny<ApplicationUser>(), AuthConstants.WorkerRole), Times.Once);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_Should_Return_Null_When_Username_Exists()
+    {
+        await using var db = CreateDbContext();
+
+        var existing = new ApplicationUser { Id = Guid.NewGuid(), UserName = "exist", Email = "exist@test.local" };
+        var userManager = CreateUserManagerMock();
+        userManager.Setup(x => x.FindByNameAsync("exist")).ReturnsAsync(existing);
+
+        var service = CreateAuthService(userManager.Object, db);
+
+        var request = new RegisterRequest
+        {
+            UserName = "exist",
+            Email = "exist@test.local",
+            Password = "P@ssw0rd!",
+            FullName = "Exist User"
+        };
+
+        var result = await service.RegisterAsync(request);
+
+        result.Should().BeNull();
+    }
 }

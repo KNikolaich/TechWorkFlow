@@ -48,6 +48,45 @@ public sealed class AuthService : IAuthService
         return await CreateSessionAsync(user, cancellationToken);
     }
 
+    public async Task<AuthResponse?> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
+    {
+        // check if user with same username or email already exists
+        var existingByName = await _userManager.FindByNameAsync(request.UserName);
+        if (existingByName is not null)
+        {
+            return null;
+        }
+
+        var existingByEmail = await _userManager.FindByEmailAsync(request.Email);
+        if (existingByEmail is not null)
+        {
+            return null;
+        }
+
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            UserName = request.UserName,
+            Email = request.Email,
+            FullName = request.FullName,
+            Role = Common.Security.AuthConstants.WorkerRole,
+            Status = UserEmploymentStatus.Working,
+            IsActive = true
+        };
+
+        var createResult = await _userManager.CreateAsync(user, request.Password);
+        if (!createResult.Succeeded)
+        {
+            return null;
+        }
+
+        // assign default role
+        await _userManager.AddToRoleAsync(user, Common.Security.AuthConstants.WorkerRole);
+
+        // create initial auth session
+        return await CreateSessionAsync(user, cancellationToken);
+    }
+
     public async Task<AuthResponse?> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
         var existingToken = await _dbContext.RefreshTokens
